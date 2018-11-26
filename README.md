@@ -7,7 +7,7 @@ Fast Setup MTProto Service in CentOS and Ubuntu and Debian OS Server With Promot
 One Line of Command for Installing MTProxy on the Operating System of Ubuntu and Debian with the Promoted Channel
 
 ```bash
-apt-get install -y curl && curl https://git.io/fpEP1 -O mtponeclick.sh && chmod +x mtponeclick.sh && ./mtponeclick.sh
+apt-get install -y wget && wget https://git.io/fpEP1 -O mtponeclick.sh && chmod +x mtponeclick.sh && ./mtponeclick.sh
 ```
 ( All Version Supported )
 

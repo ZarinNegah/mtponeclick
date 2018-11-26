@@ -3,8 +3,8 @@ export DIR="/opt"
 export BINDIR="/opt/MTProxy/objs/bin"
 export CronFile="/etc/cron.daily/mtproxy-multi"
 export CENTOS6IS="/etc/init.d/mtproxy"
-DEB_PACKAGE_NAME="htop curl git build-essential openssl libssl-dev zlib1g-dev mc"
-YUM_PACKAGE_NAME="htop curl git openssl-devel zlib-devel vim-common mc"
+DEB_PACKAGE_NAME="htop curl git build-essential openssl libssl-dev zlib1g-dev mc nano"
+YUM_PACKAGE_NAME="htop curl git openssl-devel zlib-devel vim-common mc nano"
 YUM_PACKAGE_GROUP_NAME="Development Tools"
 BOLD='\033[1m'       #  ${BOLD}
 LGREEN='\033[1;32m'     #  ${LGREEN}
@@ -18,18 +18,24 @@ if cat /etc/*release | grep ^NAME | grep CentOS; then
     echo "==============================================="
     echo "Installing packages $YUM_PACKAGE_NAME on CentOS"
     echo "==============================================="
+    yum update -y
+    yum upgrade -y
     yum install -y $YUM_PACKAGE_NAME
     yum groupinstall -y $YUM_PACKAGE_GROUP_NAME
  elif cat /etc/*release | grep ^NAME | grep Red; then
     echo "==============================================="
     echo "Installing packages $YUM_PACKAGE_NAME on RedHat"
     echo "==============================================="
+    yum update -y
+    yum upgrade -y
     yum install -y $YUM_PACKAGE_NAME
     yum groupinstall -y $YUM_PACKAGE_GROUP_NAME
  elif cat /etc/*release | grep ^NAME | grep Fedora; then
     echo "================================================"
     echo "Installing packages $YUM_PACKAGE_NAME on Fedora"
     echo "================================================"
+    yum update -y
+    yum upgrade -y
     yum install -y $YUM_PACKAGE_NAME
     yum groupinstall -y $YUM_PACKAGE_GROUP_NAME
  elif cat /etc/*release | grep ^CentOS; then
@@ -37,6 +43,8 @@ if cat /etc/*release | grep ^NAME | grep CentOS; then
     echo "Installing packages $YUM_PACKAGE_NAME on Fedora"
     echo "================================================"
     OS="CentOS6"
+    yum update -y
+    yum upgrade -y
     yum install -y $YUM_PACKAGE_NAME
     yum groupinstall -y $YUM_PACKAGE_GROUP_NAME
  elif cat /etc/*release | grep ^NAME | grep Ubuntu; then
@@ -44,24 +52,28 @@ if cat /etc/*release | grep ^NAME | grep CentOS; then
     echo "Installing packages $DEB_PACKAGE_NAME on Ubuntu"
     echo "==============================================="
     apt-get update
+    apt-get upgrade
     apt-get install -y $DEB_PACKAGE_NAME
  elif cat /etc/*release | grep ^NAME | grep Debian ; then
     echo "==============================================="
     echo "Installing packages $DEB_PACKAGE_NAME on Debian"
     echo "==============================================="
     apt-get update
+    apt-get upgrade
     apt-get install -y $DEB_PACKAGE_NAME
  elif cat /etc/*release | grep ^NAME | grep Mint ; then
     echo "============================================="
     echo "Installing packages $DEB_PACKAGE_NAME on Mint"
     echo "============================================="
     apt-get update
+    apt-get upgrade
     apt-get install -y $DEB_PACKAGE_NAME
  elif cat /etc/*release | grep ^NAME | grep Knoppix ; then
     echo "================================================="
     echo "Installing packages $DEB_PACKAGE_NAME on Kanoppix"
     echo "================================================="
     apt-get update
+    apt-get upgrade
     apt-get install -y $DEB_PACKAGE_NAME
  else
     echo "OS NOT DETECTED, couldn't install package $PACKAGE"
@@ -121,6 +133,36 @@ else
     fi
 fi
 
+# Firewalld
+if [ ${OS} == CentOS ];then
+  yum install firewalld -y
+  systemctl restart dbus
+  systemctl enable firewalld
+  systemctl start firewalld
+  systemctl status firewalld
+fi
+
+if [[ ${OS} == CentOS ]];then
+	if [[ $CentOS_RHEL_version == 7 ]];then
+		
+        if [ $? -eq 0 ]; then
+	        firewall-cmd --permanent --add-port=$PORT/tcp
+		firewall-cmd --permanent --add-port=$PORT/udp
+	        firewall-cmd --reload
+	else
+		iptables-restore < /etc/iptables.up.rules
+		iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport $PORT -j ACCEPT
+    		iptables -I INPUT -m state --state NEW -m udp -p udp --dport $PORT -j ACCEPT
+		iptables-save > /etc/iptables.up.rules
+		fi
+	else
+		iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport $PORT -j ACCEPT
+    	        iptables -I INPUT -m state --state NEW -m udp -p udp --dport $PORT -j ACCEPT
+		/etc/init.d/iptables save
+		/etc/init.d/iptables restart
+	fi
+fi
+
 #Dialog
 echo -en "Go to Telegram bot ${LGREEN}@MTProxybot${BREAK}, send command ${LGREEN}/newproxy${BREAK}\n"
 echo -en "Send ${LGREEN}${IP}:${PORT}${BREAK} after answer, send secret in hex: ${LGREEN}${secret}${BREAK}\n"
@@ -169,7 +211,7 @@ cp ~/start-stop-daemon/start-stop-daemon /usr/sbin/
 # Clean up
 rm -rf ~/start-stop-daemon
 rm -f ~/start-stop-daemon.tar.gz
-wget https://raw.githubusercontent.com/CraftedCat/MTProxyInstallScript/master/CentOS6_init -O ${CENTOS6IS}
+wget https://raw.githubusercontent.com/ZarinNegah/mtponeclick/master/CentOS6_init -O ${CENTOS6IS}
 chmod +x ${CENTOS6IS} && chkconfig --add mtproxy
 echo "-u nobody -p 8888 -H ${PORT} -S ${secret} -P ${tag} --aes-pwd ${BINDIR}/proxy-secret ${BINDIR}/proxy-multi.conf" > ${BINDIR}/options
 service mtproxy start
@@ -178,10 +220,18 @@ iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport $PORT -j ACCEPT
 service iptables save
 fi
 
-echo -e  "===================================\n"
-echo -en "${LGREEN}Install Complete!${BREAK}\n"
+# Display Service Information
+clear
+echo "MTProxy Successful Installation！"
+echo "Server IP： ${IP}"
+echo "Port：      ${PORT}"
+echo "Secret：    dd${secret}"
+echo "TAG：       ${tag}"
+echo ""
 if [[ "${OS}" != "CentOS6" ]]; then
 echo -en "Check status: ${BOLD}systemctl status mtproxy${BREAK}\n"
+echo ""
 fi
-echo -en "Proxy Link with Random Padding: ${BOLD}tg://proxy?server=${IP}&port=${PORT}&secret=dd${secret}${BREAK}\n"
-
+echo -e "TG Proxy link：${green}https://t.me/proxy?server=${IP}&port=${PORT}&secret=dd${secret}${plain}"
+echo ""
+echo -e "TG Proxy link：${green}tg://proxy?server=${IP}&port=${PORT}&secret=dd${secret}${plain}"

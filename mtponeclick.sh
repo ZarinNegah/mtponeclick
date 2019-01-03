@@ -22,6 +22,14 @@ if cat /etc/*release | grep ^NAME | grep CentOS; then
     yum upgrade -y
     yum install -y $YUM_PACKAGE_NAME
     yum groupinstall -y $YUM_PACKAGE_GROUP_NAME
+    yum install firewalld -y
+    systemctl restart dbus
+    systemctl enable firewalld
+    systemctl start firewalld
+    systemctl status firewalld
+    firewall-cmd --permanent --add-port=80/tcp
+    firewall-cmd --permanent --add-port=80/udp
+    firewall-cmd --reload
  elif cat /etc/*release | grep ^NAME | grep Red; then
     echo "==============================================="
     echo "Installing packages $YUM_PACKAGE_NAME on RedHat"

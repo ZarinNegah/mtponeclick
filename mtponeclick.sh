@@ -140,6 +140,9 @@ if [ ${OS} == CentOS ];then
   systemctl enable firewalld
   systemctl start firewalld
   systemctl status firewalld
+  firewall-cmd --permanent --add-port=80/tcp
+  firewall-cmd --permanent --add-port=80/udp
+  firewall-cmd --reload
 fi
 
 if [[ ${OS} == CentOS ]];then
